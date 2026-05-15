@@ -144,3 +144,13 @@ vite.config.ts.timestamp-*
 
 # Pycache
 __pycache__
+
+# Outputs and Uploads directory
+outputs/*
+uploads/*
+
+# App DB
+app.db
+
+# DS Store
+.DS_Store

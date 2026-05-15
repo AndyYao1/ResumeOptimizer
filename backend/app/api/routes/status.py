@@ -8,13 +8,16 @@ router = APIRouter()
 def get_status(job_id: str):
     db = SessionLocal()
 
-    job = db.query(Job).get(job_id)
+    try:
+        job = db.query(Job).get(job_id)
 
-    if not job:
-        return {"status": "not_found"}
+        if not job:
+            return {"status": "not_found"}
 
-    return {
-        "status": job.status,
-        "download_url": job.result_url,
-        "error": job.error,
-    }
+        return {
+            "status": job.status,
+            "download_url": job.result_url,
+            "error": job.error,
+        }
+    finally:
+        db.close()
