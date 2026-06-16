@@ -82,3 +82,16 @@ def generatePrompt(bullets, job_description):
         Bullets:
         {bullets}
         """
+
+def reorderSkillsPrompt(skills, job_description):
+    return f"""
+        Given a list of categories and skills, reorder the skills for each category in order of relevance
+
+        Return ONLY valid JSON in the same format with no additional text 
+
+        Job Description:
+        {job_description}
+
+        Skills:
+        {skills}
+        """

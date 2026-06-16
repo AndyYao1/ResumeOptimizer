@@ -6,7 +6,7 @@ import uuid
 from backend.app.db.session import SessionLocal
 from backend.app.db.models import Resume
 from backend.app.services.resume_cache import compute_file_hash
-from backend.app.prompts.prompts import parsePrompt,generatePrompt
+from backend.app.prompts.prompts import parsePrompt,generatePrompt,reorderSkillsPrompt
 
 from openai import OpenAI
 from sentence_transformers import SentenceTransformer
@@ -67,24 +67,16 @@ def parse_resume(file_path: str, text: str, original_filename: str) -> tuple[dic
 #     return float(sim)
 
 def rewrite_sections(resume: dict, job_description: str) -> dict:
-    def rewrite_bullets(bullets):
-        prompt = generatePrompt(bullets, job_description)
-
-        res = client.chat.completions.create(
-            model="gpt-5-mini",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-        )
-
-        return json.loads(res.choices[0].message.content)["bullets"]
-
     # Rewrite experience
     for exp in resume["experience"]:
-        exp["bullets"] = rewrite_bullets(exp["bullets"])
+        exp["bullets"] = rewrite_bullets(exp["bullets"], job_description)
 
     # Rewrite projects
     for proj in resume["projects"]:
-        proj["bullets"] = rewrite_bullets(proj["bullets"])
+        proj["bullets"] = rewrite_bullets(proj["bullets"], job_description)
+
+    # Reorder skills
+    resume["skills"] = reorder_skills(resume["skills"], job_description)
 
     return resume
 
@@ -223,3 +215,25 @@ def generate_pdf(resume: dict, output_path: str):
         elements.append(table)
 
     doc.build(elements)
+
+def rewrite_bullets(bullets, job_description):
+        prompt = generatePrompt(bullets, job_description)
+
+        res = client.chat.completions.create(
+            model="gpt-5-mini",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+
+        return json.loads(res.choices[0].message.content)["bullets"]
+
+def reorder_skills(skills, job_description):
+        prompt = reorderSkillsPrompt(skills, job_description)
+
+        res = client.chat.completions.create(
+            model="gpt-5-mini",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+
+        return json.loads(res.choices[0].message.content)
