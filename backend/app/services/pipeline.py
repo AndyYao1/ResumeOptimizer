@@ -2,13 +2,14 @@ import fitz
 import os
 import json
 import uuid
+import asyncio
 
 from backend.app.db.session import SessionLocal
 from backend.app.db.models import Resume
 from backend.app.services.resume_cache import compute_file_hash
 from backend.app.prompts.prompts import parsePrompt,generatePrompt,reorderSkillsPrompt
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 from sentence_transformers import SentenceTransformer
 from reportlab.lib import enums, colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
@@ -16,7 +17,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from dotenv import load_dotenv
 
 load_dotenv()
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+client = AsyncOpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def extract_text(file_path: str) -> str:
@@ -66,17 +67,26 @@ def parse_resume(file_path: str, text: str, original_filename: str) -> tuple[dic
 
 #     return float(sim)
 
-def rewrite_sections(resume: dict, job_description: str) -> dict:
-    # Rewrite experience
-    for exp in resume["experience"]:
-        exp["bullets"] = rewrite_bullets(exp["bullets"], job_description)
+async def rewrite_sections(resume: dict, job_description: str) -> dict:
+    # coroutines for experience, projects, and skills
+    exp_tasks = [rewrite_bullets(exp["bullets"], job_description) for exp in resume["experience"]]
+    proj_tasks = [rewrite_bullets(proj["bullets"], job_description) for proj in resume["projects"]]
+    skills_task = reorder_skills(resume["skills"], job_description)
 
-    # Rewrite projects
-    for proj in resume["projects"]:
-        proj["bullets"] = rewrite_bullets(proj["bullets"], job_description)
+    # Run everything concurrently
+    results = await asyncio.gather(*exp_tasks, *proj_tasks, skills_task)
+    
+    # Unpack results
+    n_exp = len(resume["experience"])
+    n_proj = len(resume["projects"])
 
-    # Reorder skills
-    resume["skills"] = reorder_skills(resume["skills"], job_description)
+    for exp, bullets in zip(resume["experience"], results[:n_exp]):
+        exp["bullets"] = bullets
+
+    for proj, bullets in zip(resume["projects"], results[n_exp:n_exp + n_proj]):
+        proj["bullets"] = bullets
+
+    resume["skills"] = results[-1]
 
     return resume
 
@@ -216,24 +226,24 @@ def generate_pdf(resume: dict, output_path: str):
 
     doc.build(elements)
 
-def rewrite_bullets(bullets, job_description):
-        prompt = generatePrompt(bullets, job_description)
+async def rewrite_bullets(bullets, job_description):
+    prompt = generatePrompt(bullets, job_description)
 
-        res = client.chat.completions.create(
-            model="gpt-5-mini",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-        )
+    res = await client.chat.completions.create(
+        model="gpt-5-mini",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+    )
 
-        return json.loads(res.choices[0].message.content)["bullets"]
+    return json.loads(res.choices[0].message.content)["bullets"]
 
-def reorder_skills(skills, job_description):
-        prompt = reorderSkillsPrompt(skills, job_description)
+async def reorder_skills(skills, job_description):
+    prompt = reorderSkillsPrompt(skills, job_description)
 
-        res = client.chat.completions.create(
-            model="gpt-5-mini",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-        )
+    res = await client.chat.completions.create(
+        model="gpt-5-mini",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+    )
 
-        return json.loads(res.choices[0].message.content)
+    return json.loads(res.choices[0].message.content)

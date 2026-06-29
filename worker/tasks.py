@@ -1,3 +1,4 @@
+import asyncio
 import os
 from backend.app.core.celery_app import celery
 from backend.app.core.config import OUTPUT_DIR
@@ -29,7 +30,7 @@ def parse_task(data):
 @shared_task(bind=True, max_retries=3)
 def rewrite_task(self,data):
     try:
-        rewritten = rewrite_sections(data["resume"], data["job_description"])
+        rewritten = asyncio.run(rewrite_sections(data["resume"], data["job_description"]))
         data["resume"] = rewritten
     except Exception as e:
         raise self.retry(exc=e, countdown=2**self.request.retries)
