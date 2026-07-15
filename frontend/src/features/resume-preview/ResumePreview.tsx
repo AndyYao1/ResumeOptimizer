@@ -3,8 +3,8 @@ type Props = {
   downloadUrl: string | null;
 };
 
-export function ResumePreview({status,downloadUrl}: Props) {
-  const fileName = downloadUrl?.split("/").pop();
+export function ResumePreview({status, downloadUrl}: Props) {
+  const resumeUrl = downloadUrl ? `http://localhost:8000${downloadUrl}` : null;
 
   return (
     <div className="h-full border rounded-lg flex flex-col overflow-hidden">
@@ -14,7 +14,7 @@ export function ResumePreview({status,downloadUrl}: Props) {
 
         {status === "completed" && downloadUrl && (
           <a
-            href={`http://localhost:8000/download/${fileName}`}
+            href={resumeUrl}
             className="px-4 py-2 rounded bg-black text-white text-sm"
           >
             Download PDF
@@ -38,7 +38,7 @@ export function ResumePreview({status,downloadUrl}: Props) {
 
         {status === "completed" && downloadUrl && (
           <iframe
-            src={`http://localhost:8000${downloadUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+            src={`${resumeUrl}#toolbar=0&navpanes=0&scrollbar=0`}
             className="w-full h-full"
           />
         )}

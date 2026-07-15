@@ -75,7 +75,7 @@ def generatePrompt(bullets, job_description):
         - Emphasize impact and measurable outcomes
         - Do not invent experience
         - Do not use first person pronouns 
-        - Maintain a natural, human-like tone
+        - Maintain a natural, human-like tone so each bullet point is something a candidate would say out loud
 
         Job description:
         {job_description}
