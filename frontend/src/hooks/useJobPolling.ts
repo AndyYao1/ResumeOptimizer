@@ -8,22 +8,22 @@ export function useJobPolling(jobId: string | null) {
   useEffect(() => {
     if (!jobId) return;
 
-    setStatus("processing");
-
-    const interval = setInterval(async () => {
+    const poll = async () => {
       const data = await fetchJobStatus(jobId);
+      setStatus(data.status);
 
       if (data.status === "completed") {
-        setStatus("completed");
         setDownloadUrl(data.download_url);
         clearInterval(interval);
       }
 
       if (data.status === "failed") {
-        setStatus("failed");
         clearInterval(interval);
       }
-    }, 2000);
+    };
+
+    const interval = setInterval(() => void poll(), 2000);
+    void poll();
 
     return () => clearInterval(interval);
   }, [jobId]);

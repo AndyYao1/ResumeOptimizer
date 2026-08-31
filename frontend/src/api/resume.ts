@@ -16,6 +16,16 @@ export async function submitResume(file: File, jobDescription: string) {
     return res.json();
   }
 
+  export async function deleteResume(resumeId: string) {
+    const res = await fetch(`http://localhost:8000/resumes/${resumeId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      throw new Error("Unable to delete resume");
+    }
+  }
+
   export async function generateFromExisting(resumeId: string, jobDescription: string) {
     const formData = new FormData();
     formData.append("resume_id", resumeId);

@@ -6,12 +6,13 @@ import { useGenerateResume } from "../features/generation/useGenerateResume";
 import { useJobPolling } from "../hooks/useJobPolling";
 import { fetchResumes } from "../api/resume";
 import { ResumeSelector } from "../features/resume-upload/ResumeSelector";
+import type { SavedResume } from "../features/resume-upload/ResumeSelector";
 
 export default function GeneratePage() {
   const [file, setFile] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState("");
 
-  const [resumes, setResumes] = useState<any[]>([]);
+  const [resumes, setResumes] = useState<SavedResume[]>([]);
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
   const [isUploadingNew, setIsUploadingNew] = useState(false);
 
@@ -27,10 +28,14 @@ export default function GeneratePage() {
   }, []);
 
   return (
-    <div className="h-screen flex">
+    <div className="flex h-screen bg-slate-50">
       {/* Left Panel */}
-      <div className="w-1/2 p-8 border-r flex flex-col gap-6 overflow-y-auto">
-        <h1 className="text-2xl font-semibold">Resume Tailor</h1>
+      <div className="flex w-1/2 flex-col gap-6 overflow-y-auto border-r border-slate-200 bg-white p-8">
+        <div>
+          <p className="mb-1.5 text-xs font-bold tracking-[.08em] text-indigo-600 uppercase">Resume studio</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Tailor your resume</h1>
+          <p className="mt-2 text-sm text-slate-500">Match your experience to the role that matters most.</p>
+        </div>
 
         <JobDescription value={jobDescription} setValue={setJobDescription}/>
 
@@ -54,14 +59,14 @@ export default function GeneratePage() {
               generateExisting(selectedResumeId, jobDescription);
             }
           }}
-          className="py-3 bg-blue-600 text-white rounded-lg"
+          className="mt-auto rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white shadow-sm shadow-indigo-200 transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-indigo-300"
         >
-          {loading ? "Generating..." : "Generate"}
+          {loading ? "Generating..." : "Generate tailored resume"}
         </button>
       </div>
 
       {/* Right Panel */}
-      <div className="w-1/2 p-8 h-full">
+      <div className="h-full w-1/2 p-8">
         <ResumePreview status={status} downloadUrl={downloadUrl} />
       </div>
     </div>
