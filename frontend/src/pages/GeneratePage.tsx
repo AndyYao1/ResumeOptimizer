@@ -7,6 +7,8 @@ import { useJobPolling } from "../hooks/useJobPolling";
 import { fetchResumes } from "../api/resume";
 import { ResumeSelector } from "../features/resume-upload/ResumeSelector";
 import type { SavedResume } from "../features/resume-upload/ResumeSelector";
+import { ApplicationQuestions } from "../features/application-questions/ApplicationQuestions";
+import { ApplicationAnswers } from "../features/application-questions/ApplicationAnswers";
 
 export default function GeneratePage() {
   const [file, setFile] = useState<File | null>(null);
@@ -15,6 +17,9 @@ export default function GeneratePage() {
   const [resumes, setResumes] = useState<SavedResume[]>([]);
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
   const [isUploadingNew, setIsUploadingNew] = useState(false);
+  const [applicationQuestions, setApplicationQuestions] = useState<string[]>([]);
+  const [generatedQuestions, setGeneratedQuestions] = useState<string[]>([]);
+  const [applicationAnswers, setApplicationAnswers] = useState<string[]>([]);
 
   const { generate, generateExisting, jobId, loading } = useGenerateResume();
   const { status, downloadUrl } = useJobPolling(jobId);
@@ -27,6 +32,23 @@ export default function GeneratePage() {
     load();
   }, []);
 
+  function handleGenerate() {
+    const questions = applicationQuestions.filter((question) => question.trim());
+    const canGenerateWithUpload = isUploadingNew && file && jobDescription;
+    const canGenerateWithSavedResume = selectedResumeId && jobDescription;
+
+    if (!canGenerateWithUpload && !canGenerateWithSavedResume) return;
+
+    setGeneratedQuestions(questions);
+    setApplicationAnswers(questions.map(() => ""));
+
+    if (canGenerateWithUpload) {
+      generate(file, jobDescription, );
+    } else if (canGenerateWithSavedResume) {
+      generateExisting(selectedResumeId, jobDescription);
+    }
+  }
+
   return (
     <div className="flex h-screen bg-slate-50">
       {/* Left Panel */}
@@ -38,6 +60,8 @@ export default function GeneratePage() {
         </div>
 
         <JobDescription value={jobDescription} setValue={setJobDescription}/>
+
+        <ApplicationQuestions questions={applicationQuestions} setQuestions={setApplicationQuestions} />
 
         <ResumeSelector
           resumes={resumes}
@@ -52,13 +76,7 @@ export default function GeneratePage() {
 
         <button
           disabled={loading}
-          onClick={() => { 
-            if (isUploadingNew && file && jobDescription) {
-              generate(file, jobDescription);
-            } else if (selectedResumeId && jobDescription) {
-              generateExisting(selectedResumeId, jobDescription);
-            }
-          }}
+          onClick={handleGenerate}
           className="mt-auto rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white shadow-sm shadow-indigo-200 transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-indigo-300"
         >
           {loading ? "Generating..." : "Generate tailored resume"}
@@ -66,8 +84,17 @@ export default function GeneratePage() {
       </div>
 
       {/* Right Panel */}
-      <div className="h-full w-1/2 p-8">
-        <ResumePreview status={status} downloadUrl={downloadUrl} />
+      <div className="h-full w-1/2 overflow-y-auto p-8">
+        <div className="flex min-h-full flex-col gap-5">
+          <div className="h-[calc(100vh-4rem)]">
+            <ResumePreview status={status} downloadUrl={downloadUrl} />
+          </div>
+          <ApplicationAnswers
+            questions={generatedQuestions}
+            answers={applicationAnswers}
+            setAnswers={setApplicationAnswers}
+          />
+        </div>
       </div>
     </div>
   );

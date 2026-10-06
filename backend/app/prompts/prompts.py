@@ -49,7 +49,7 @@ def parsePrompt(text: str) -> str:
         {text}
         """
 
-def generatePrompt(bullets, job_description):
+def generatePrompt(bullets: str, job_description: str) -> str:
     return f"""
         You are an expert technical resume writer specializing in ATS-optimized software engineering resumes. 
         Rewrite the provided bullet points to align with the job description while preserving factual accuracy.
@@ -84,7 +84,7 @@ def generatePrompt(bullets, job_description):
         {bullets}
         """
 
-def reorderSkillsPrompt(skills, job_description):
+def reorderSkillsPrompt(skills: dict, job_description: str) -> str:
     return f"""
         Given a list of categories and skills, reorder the skills for each category in order of relevance
 
