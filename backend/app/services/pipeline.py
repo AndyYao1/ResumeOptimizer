@@ -7,7 +7,7 @@ import asyncio
 from backend.app.db.session import SessionLocal
 from backend.app.db.models import Resume
 from backend.app.services.resume_cache import compute_file_hash
-from backend.app.prompts.prompts import parsePrompt,generatePrompt,reorderSkillsPrompt
+from backend.app.prompts.prompts import parsePrompt,generatePrompt,reorderSkillsPrompt,generateApplicationAnswersPrompt
 
 from openai import AsyncOpenAI
 from sentence_transformers import SentenceTransformer
@@ -67,14 +67,15 @@ def parse_resume(file_path: str, text: str, original_filename: str) -> tuple[dic
 
 #     return float(sim)
 
-async def rewrite_sections(resume: dict, job_description: str) -> dict:
+async def rewrite_sections(resume: dict, job_description: str, questions: list) -> tuple[dict, list]:
     # coroutines for experience, projects, and skills
     exp_tasks = [rewrite_bullets(exp["bullets"], job_description) for exp in resume["experience"]]
     proj_tasks = [rewrite_bullets(proj["bullets"], job_description) for proj in resume["projects"]]
     skills_task = reorder_skills(resume["skills"], job_description)
+    questions_task = generate_answers(resume, questions, job_description)
 
     # Run everything concurrently
-    results = await asyncio.gather(*exp_tasks, *proj_tasks, skills_task)
+    results = await asyncio.gather(*exp_tasks, *proj_tasks, skills_task, questions_task)
     
     # Unpack results
     n_exp = len(resume["experience"])
@@ -86,9 +87,8 @@ async def rewrite_sections(resume: dict, job_description: str) -> dict:
     for proj, bullets in zip(resume["projects"], results[n_exp:n_exp + n_proj]):
         proj["bullets"] = bullets
 
-    resume["skills"] = results[-1]
-
-    return resume
+    resume["skills"] = results[-2]
+    return resume, [{"question": questions[i],"answer": results[-1]["answers"][i]} for i in range(len(questions))]
 
 def generate_pdf(resume: dict, output_path: str):
     doc = SimpleDocTemplate(output_path)
@@ -230,7 +230,7 @@ async def rewrite_bullets(bullets, job_description):
     prompt = generatePrompt(bullets, job_description)
 
     res = await client.chat.completions.create(
-        model="gpt-5-mini",
+        model="gpt-6-luna",
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
     )
@@ -241,7 +241,21 @@ async def reorder_skills(skills, job_description):
     prompt = reorderSkillsPrompt(skills, job_description)
 
     res = await client.chat.completions.create(
-        model="gpt-5-mini",
+        model="gpt-6-luna",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+    )
+
+    return json.loads(res.choices[0].message.content)
+
+async def generate_answers(resume, questions, job_description):
+    if len(questions) < 1:
+        return {"answers": []}
+    
+    prompt = generateApplicationAnswersPrompt(resume, questions, job_description)
+
+    res = await client.chat.completions.create(
+        model="gpt-6-luna",
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
     )

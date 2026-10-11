@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import { fetchJobStatus } from "../api/status";
 
+type ApplicationAnswer = {
+  question: string;
+  answer: string;
+};
+
 export function useJobPolling(jobId: string | null) {
   const [status, setStatus] = useState<string>("idle");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<ApplicationAnswer[] | null>(null);
 
   useEffect(() => {
     if (!jobId) return;
@@ -14,6 +20,7 @@ export function useJobPolling(jobId: string | null) {
 
       if (data.status === "completed") {
         setDownloadUrl(data.download_url);
+        setAnswers(data.answers);
         clearInterval(interval);
       }
 
@@ -28,5 +35,5 @@ export function useJobPolling(jobId: string | null) {
     return () => clearInterval(interval);
   }, [jobId]);
 
-  return { status, downloadUrl };
+  return { status, downloadUrl, answers };
 }

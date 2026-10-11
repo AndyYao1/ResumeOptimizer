@@ -5,16 +5,16 @@ export function useGenerateResume() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function generate(file: File, jobDescription: string) {
+  async function generate(file: File, jobDescription: string, questions: string[]) {
     setLoading(true);
-    const data = await submitResume(file, jobDescription);
+    const data = await submitResume(file, jobDescription, questions);
     setJobId(data.job_id);
     setLoading(false);
   }
 
-  async function generateExisting(resumeId: string, jobDescription: string) {
+  async function generateExisting(resumeId: string, jobDescription: string, questions: string[]) {
     setLoading(true);
-    const data = await generateFromExisting(resumeId, jobDescription);
+    const data = await generateFromExisting(resumeId, jobDescription, questions);
     setJobId(data.job_id);
     setLoading(false);
   }

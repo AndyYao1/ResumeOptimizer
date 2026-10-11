@@ -1,7 +1,8 @@
-export async function submitResume(file: File, jobDescription: string) {
+export async function submitResume(file: File, jobDescription: string, questions: string[]) {
     const formData = new FormData();
     formData.append("resume", file);
     formData.append("job_description", jobDescription);
+    questions.forEach((question) => formData.append("questions[]", question));
   
     const res = await fetch("http://localhost:8000/analyze", {
       method: "POST",
@@ -26,10 +27,11 @@ export async function submitResume(file: File, jobDescription: string) {
     }
   }
 
-  export async function generateFromExisting(resumeId: string, jobDescription: string) {
+  export async function generateFromExisting(resumeId: string, jobDescription: string, questions: string[]) {
     const formData = new FormData();
     formData.append("resume_id", resumeId);
     formData.append("job_description", jobDescription);
+    questions.forEach((question) => formData.append("questions", question));
 
     const res = await fetch("http://localhost:8000/analyze", {
       method: "POST",

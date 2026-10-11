@@ -17,7 +17,8 @@ def get_status(job_id: str):
         return {
             "status": job.status,
             "download_url": job.result_url,
-            "error": job.error,
+            "answers": job.application_answers,
+            "error": job.error
         }
     finally:
         db.close()

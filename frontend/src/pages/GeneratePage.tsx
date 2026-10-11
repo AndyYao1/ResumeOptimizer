@@ -18,11 +18,14 @@ export default function GeneratePage() {
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
   const [isUploadingNew, setIsUploadingNew] = useState(false);
   const [applicationQuestions, setApplicationQuestions] = useState<string[]>([]);
-  const [generatedQuestions, setGeneratedQuestions] = useState<string[]>([]);
-  const [applicationAnswers, setApplicationAnswers] = useState<string[]>([]);
+  const [editedAnswers, setEditedAnswers] = useState<string[]>([]);
 
   const { generate, generateExisting, jobId, loading } = useGenerateResume();
-  const { status, downloadUrl } = useJobPolling(jobId);
+  const { status, downloadUrl, answers } = useJobPolling(jobId);
+  const displayedQuestions = answers?.map((item) => item.question) ?? [];
+  const displayedAnswers = editedAnswers.length > 0
+    ? editedAnswers
+    : answers?.map((item) => item.answer) ?? [];
 
   useEffect(() => {
     async function load() {
@@ -39,13 +42,13 @@ export default function GeneratePage() {
 
     if (!canGenerateWithUpload && !canGenerateWithSavedResume) return;
 
-    setGeneratedQuestions(questions);
-    setApplicationAnswers(questions.map(() => ""));
+    setApplicationQuestions(questions);
+    setEditedAnswers([]);
 
     if (canGenerateWithUpload) {
-      generate(file, jobDescription, );
+      generate(file, jobDescription, applicationQuestions);
     } else if (canGenerateWithSavedResume) {
-      generateExisting(selectedResumeId, jobDescription);
+      generateExisting(selectedResumeId, jobDescription, applicationQuestions);
     }
   }
 
@@ -90,9 +93,9 @@ export default function GeneratePage() {
             <ResumePreview status={status} downloadUrl={downloadUrl} />
           </div>
           <ApplicationAnswers
-            questions={generatedQuestions}
-            answers={applicationAnswers}
-            setAnswers={setApplicationAnswers}
+            questions={displayedQuestions}
+            answers={displayedAnswers}
+            setAnswers={setEditedAnswers}
           />
         </div>
       </div>

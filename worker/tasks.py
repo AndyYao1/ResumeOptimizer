@@ -30,8 +30,9 @@ def parse_task(data):
 @shared_task(bind=True, max_retries=3)
 def rewrite_task(self,data):
     try:
-        rewritten = asyncio.run(rewrite_sections(data["resume"], data["job_description"]))
+        rewritten,answers = asyncio.run(rewrite_sections(data["resume"], data["job_description"], data["questions"]))
         data["resume"] = rewritten
+        data["answers"] = answers
     except Exception as e:
         raise self.retry(exc=e, countdown=2**self.request.retries)
     return data
@@ -52,6 +53,7 @@ def finalize_task(data):
         job.status = "completed"
         job.result_url = f"/outputs/{data["original_filename"]}"
         job.resume_id = data["resume_id"]
+        job.application_answers = data["answers"]
 
         db.commit()
     finally:

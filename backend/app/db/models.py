@@ -14,6 +14,7 @@ class Job(Base):
     result_url = Column(String)
     error = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.now())
+    application_answers = Column(JSON, nullable=True)
 
 class Resume(Base):
     __tablename__ = "resumes"

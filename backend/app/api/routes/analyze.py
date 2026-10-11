@@ -11,7 +11,7 @@ from typing import Optional
 router = APIRouter()
 
 @router.post("/analyze")
-async def analyze(resume: Optional[UploadFile] = File(None), resume_id: Optional[str] = Form(None), job_description: str = Form(...)):
+async def analyze(resume: Optional[UploadFile] = File(None), resume_id: Optional[str] = Form(None), job_description: str = Form(...), questions: list[str] = Form(default=[])):
     db = SessionLocal()
     try:
         if not resume and not resume_id:
@@ -38,7 +38,8 @@ async def analyze(resume: Optional[UploadFile] = File(None), resume_id: Optional
                     "job_id": job_id,
                     "file_path": file_path,
                     "job_description": job_description,
-                    "original_filename": resume.filename
+                    "original_filename": resume.filename,
+                    "questions": questions,
                 }),
                 parse_task.s(),
                 rewrite_task.s(),
@@ -72,7 +73,8 @@ async def analyze(resume: Optional[UploadFile] = File(None), resume_id: Optional
                     "job_description": job_description,
                     "original_filename": resume_obj.original_filename,
                     "resume": resume_obj.structured_data,
-                    "resume_id": resume_obj.id
+                    "resume_id": resume_obj.id,
+                    "questions": questions,
                 }),
                 generate_task.s(),
                 finalize_task.s(),
